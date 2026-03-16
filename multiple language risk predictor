@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Type 2 Diabetes Risk Prediction</title>
+    <!-- Tell spell checkers to ignore medical terms -->
+    <!-- spell-checker:ignore pcos ogtt hba1c -->
+    <style>
+        /* Basic reset & layout */
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef3f9;
+            text-align: center;
+            margin: 0;
+        }
+        .header {
+            background: #1565c0;
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .header h2 {
+            margin: 0;
+        }
+        /* Visually hidden but accessible label */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .container {
+            background: white;
+            width: 450px;
+            margin: 30px auto;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px gray;
+        }
+        input, select {
+            width: 90%;
+            padding: 10px;
+            margin: 6px;
+            font-size: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        label {
+            display: block;
+            text-align: left;
+            margin-left: 5%;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        button {
+            padding: 12px 20px;
+            background: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .low { background: #c8e6c9; color: #1b5e20; }
+        .medium { background: #ffe0b2; color: #e65100; }
+        .high { background: #ffcdd2; color: #b71c1c; }
+        .recommend {
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2 id="title">Type 2 Diabetes Risk Prediction</h2>
+        <!-- Added accessible label for the language select -->
+        <label for="langSelect" class="sr-only">Choose language</label>
+        <select id="langSelect" onchange="changeLang(this.value)">
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+            <option value="te">Telugu</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <label for="age">Age</label>
+        <input type="number" id="age" placeholder="Age">
+
+        <label for="bmi">BMI</label>
+        <input type="number" id="bmi" placeholder="BMI" step="0.1">
+
+        <label for="gender">Gender</label>
+        <select id="gender" onchange="togglePCOS()">
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select>
+
+        <div id="pcosDiv" style="display:none">
+            <label for="pcos">PCOS</label>
+            <select id="pcos">
+                <option value="">Select</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+        </div>
+
+        <label for="family">Family History of Diabetes</label>
+        <select id="family">
+            <option value="">Select</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+        </select>
+
+        <label for="random">Random Blood Sugar (mg/dL)</label>
+        <input type="number" id="random" placeholder="Random Blood Sugar">
+
+        <label for="hba1c">HbA1c (%)</label>
+        <input type="number" id="hba1c" placeholder="HbA1c" step="0.1">
+
+        <label for="fasting">Fasting Blood Sugar (mg/dL)</label>
+        <input type="number" id="fasting" placeholder="Fasting Blood Sugar">
+
+        <!-- Changed "Post Prandial" to standard "Postprandial" -->
+        <label for="post">Postprandial Blood Sugar (mg/dL)</label>
+        <input type="number" id="post" placeholder="Postprandial">
+
+        <label for="ogtt">OGTT (mg/dL)</label>
+        <input type="number" id="ogtt" placeholder="OGTT">
+
+        <label for="urine">Urine Glucose Test</label>
+        <select id="urine">
+            <option value="">Select</option>
+            <option value="positive">Positive</option>
+            <option value="negative">Negative</option>
+        </select>
+
+        <br><br>
+        <button id="predictBtn" onclick="predict()">Predict Risk</button>
+        <div id="resultBox" class="result"></div>
+        <div id="recommend" class="recommend"></div>
+    </div>
+
+    <script>
+        let lang = "en";
+
+        function changeLang(l) {
+            lang = l;
+            const title = document.getElementById("title");
+            const btn = document.getElementById("predictBtn");
+            if (l === "hi") {
+                title.innerText = "टाइप 2 मधुमेह जोखिम भविष्यवाणी";
+                btn.innerText = "जोखिम जांचें";
+            } else if (l === "te") {
+                title.innerText = "టైప్ 2 డయాబెటిస్ ప్రమాద అంచనా";
+                btn.innerText = "ప్రమాదం చూడండి";
+            } else {
+                title.innerText = "Type 2 Diabetes Risk Prediction";
+                btn.innerText = "Predict Risk";
+            }
+        }
+
+        function togglePCOS() {
+            const gender = document.getElementById("gender").value;
+            document.getElementById("pcosDiv").style.display = (gender === "female") ? "block" : "none";
+        }
+
+        function predict() {
+            const baseFields = ["age", "bmi", "gender", "family", "random", "hba1c", "fasting", "post", "ogtt", "urine"];
+            for (let id of baseFields) {
+                if (!document.getElementById(id).value) {
+                    alert("Please fill all fields");
+                    return;
+                }
+            }
+
+            const gender = document.getElementById("gender").value;
+            if (gender === "female") {
+                const pcosVal = document.getElementById("pcos").value;
+                if (!pcosVal) {
+                    alert("Please select PCOS status");
+                    return;
+                }
+            }
+
+            // Convert to numbers
+            const age = Number(document.getElementById("age").value);
+            const bmi = Number(document.getElementById("bmi").value);
+            const hba1c = Number(document.getElementById("hba1c").value);
+            const fasting = Number(document.getElementById("fasting").value);
+            const random = Number(document.getElementById("random").value);
+            const post = Number(document.getElementById("post").value);
+            const ogtt = Number(document.getElementById("ogtt").value);
+            const family = document.getElementById("family").value;
+            const urine = document.getElementById("urine").value;
+            const pcos = (gender === "female") ? document.getElementById("pcos").value : "no";
+
+            let risk = 0;
+
+            if (age > 45) risk += 10;
+            else if (age > 35) risk += 5;
+
+            if (bmi > 30) risk += 20;
+            else if (bmi > 25) risk += 10;
+
+            if (hba1c >= 6.5) risk += 30;
+            else if (hba1c > 5.7) risk += 15;
+
+            if (fasting >= 126) risk += 25;
+            else if (fasting > 100) risk += 10;
+
+            if (random >= 200) risk += 20;
+            else if (random > 140) risk += 10;
+
+            if (post >= 200) risk += 20;
+            else if (post > 140) risk += 10;
+
+            if (ogtt >= 200) risk += 25;
+            else if (ogtt >= 140) risk += 10;
+
+            if (family === "yes") risk += 10;
+            if (urine === "positive") risk += 5;
+            if (gender === "female" && pcos === "yes") risk += 10;
+
+            const displayRisk = Math.min(risk, 100);
+
+            const resultBox = document.getElementById("resultBox");
+            const recommend = document.getElementById("recommend");
+
+            if (displayRisk < 30) {
+                resultBox.className = "result low";
+                resultBox.innerHTML = `LOW RISK (${displayRisk}%) – SAFE`;
+                recommend.innerHTML = "Maintain healthy diet, exercise regularly, check sugar yearly.";
+            } else if (displayRisk < 60) {
+                resultBox.className = "result medium";
+                resultBox.innerHTML = `MODERATE RISK (${displayRisk}%) – ALERT`;
+                recommend.innerHTML = "Reduce sugar intake, increase physical activity, regular checkups.";
+            } else {
+                resultBox.className = "result high";
+                resultBox.innerHTML = `HIGH RISK (${displayRisk}%) – DANGER`;
+                recommend.innerHTML = "Consult doctor immediately, monitor sugar levels frequently.";
+            }
+        }
+    </script>
+</body>
+</html>
